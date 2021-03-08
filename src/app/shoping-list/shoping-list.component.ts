@@ -7,15 +7,19 @@ import { ingerdients } from '../shared/Ingredients.module';
   styleUrls: ['./shoping-list.component.css']
 })
 export class ShopingListComponent implements OnInit {
-  ingerdients:ingerdients[] = [
-    new ingerdients('couscous',1),
-    new ingerdients('viande',1),
-    new ingerdients('pomme de terre',2)
+  ingerdients: ingerdients[] = [
+    new ingerdients('couscous', 1),
+    new ingerdients('viande', 1),
+    new ingerdients('pomme de terre', 2)
   ];
 
   constructor() { }
 
   ngOnInit(): void {
+  }
+
+  onIngredientAdded(ing: ingerdients) {
+    this.ingerdients.push(ing);
   }
 
 }
