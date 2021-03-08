@@ -15,7 +15,7 @@ export class RecipeService {
             new Ingerdients('potato', 1,'kg'),
             new Ingerdients('onion', 2,'kg'),
         ]),
-        new Recipe("kanoumenya","kamouneya tounseya",
+        new Recipe("kamouneya","kamouneya tounseya",
          "https://i.pinimg.com/originals/fd/2e/e5/fd2ee582870a2315d775841bd708fa69.jpg",
          [
             new Ingerdients('liver', 1,'kg'),
