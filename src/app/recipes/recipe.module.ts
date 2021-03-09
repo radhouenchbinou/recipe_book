@@ -1,7 +1,7 @@
 import { Ingerdients } from "../shared/Ingredients.module";
 
 export class Recipe {
-    public name: String;
+    public name: string;
     public description: string;
     public imagePath: string;
     public ingredients: Ingerdients[];
