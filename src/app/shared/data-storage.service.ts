@@ -22,17 +22,8 @@ export class DataStorageService {
 
     fetchRecipes() {
         console.log('fromfetchData')
-        return this.authService.user.pipe(
-            take(1),
-            exhaustMap(user => {
-                console.log('infetchDatafromExhaustMap')
-
-                return this.httpclient.get(FIREBASE_URL + '/recipes.json',
-                    {
-                        params: new HttpParams().set('auth', user.token)
-                    })
-
-            }),
+        return this.httpclient.get(FIREBASE_URL + '/recipes.json',
+        ).pipe(
             map(recipes => {
                 console.log('infetchDataFromMap')
                 return (<Recipe[]>recipes).map(recipe => {
@@ -44,7 +35,6 @@ export class DataStorageService {
             }),
             tap(recipes => {
                 this.recipeService.setRecipes(recipes);
-                console.log('infetchDataFromTap')
 
             })
         )
