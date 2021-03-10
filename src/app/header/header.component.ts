@@ -1,4 +1,6 @@
 import { Component, OnInit, EventEmitter, Output } from '@angular/core';
+import { Subscription } from 'rxjs';
+import { AuthService } from '../auth/auth/auth.service';
 import { DataStorageService } from '../shared/data-storage.service';
 
 
@@ -8,10 +10,20 @@ import { DataStorageService } from '../shared/data-storage.service';
   styleUrls: ['./header.component.css']
 })
 export class HeaderComponent implements OnInit {
- 
-  constructor(private dataStorageService : DataStorageService) { }
+  isAuthenticated = false;
+  private userSubscription: Subscription;
+
+  constructor(private dataStorageService : DataStorageService, private authService : AuthService) { }
 
   ngOnInit(): void {
+    this.userSubscription= this.authService.user.subscribe(
+      user => {
+        this.isAuthenticated = !!user;
+        console.log(!user);
+        console.log(!!user);
+      }
+    );
+    
   }
 
   onSaveData(){
@@ -19,7 +31,16 @@ export class HeaderComponent implements OnInit {
   }
 
   onFetchData(){
-    this.dataStorageService.fetchRecipes();
+    console.log('onheaderfetchData')
+    this.dataStorageService.fetchRecipes().subscribe();
+    console.log("endHeaderFetchData")
   }
+
+  ngOnDestroy(): void {
+    //Called once, before the instance is destroyed.
+    //Add 'implements OnDestroy' to the class.
+    this.userSubscription.unsubscribe();
+  }
+  
 
 }
