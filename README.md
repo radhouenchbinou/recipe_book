@@ -1,5 +1,5 @@
 
-LIVE demo : https://tunisian-food.netlify.app/auth
+LIVE demo : https://tunisian-food.netlify.app/
 
 
 # RecipeApp
