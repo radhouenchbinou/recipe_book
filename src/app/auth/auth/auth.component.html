@@ -9,11 +9,11 @@
         <form #authForm="ngForm" (ngSubmit)="onSubmit(authForm)" *ngIf="!isLoading" >
             <div class="form-group">
                 <label for="email"></label>
-                <input 
-                type="text" 
-                id="email" 
-                placeholder="Email Address" 
-                class="form-control" 
+                <input
+                type="text"
+                id="email"
+                placeholder="Email Address"
+                class="form-control"
                 ngModel=""
                 name="email"
                 required
@@ -21,10 +21,10 @@
             </div>
             <div class="form-group">
                 <label for="email"></label>
-                <input 
-                type="password" 
-                id="password" 
-                placeholder="Password" 
+                <input
+                type="password"
+                id="password"
+                placeholder="Password"
                 class="form-control"
                 name="password"
                 ngModel=""
@@ -32,14 +32,15 @@
                 minLength="6">
             </div>
             <div>
-                <button 
-                class="btn btn-primary" 
+                <button
+                class="btn btn-primary"
                 type="submit"
                 [disabled]="!authForm.valid">
                     {{isInLogin? "Login" : "Sign Up"}}
                 </button>
                 |
-               
+                <button (click)="onSwitchMode()">switch to {{!isInLogin? "Login" : "Sign Up"}}</button>
+
             </div>
         </form>
     </div>
