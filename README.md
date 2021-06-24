@@ -1,6 +1,7 @@
 
 LIVE demo : https://tunisian-food.netlify.app/
 
+full course : https://freecoursesite.com/angular-4-the-complete-guide-25/
 
 # RecipeApp
 
