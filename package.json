@@ -19,6 +19,9 @@
     "@angular/platform-browser": "~11.1.1",
     "@angular/platform-browser-dynamic": "~11.1.1",
     "@angular/router": "~11.1.1",
+    "@capacitor/android": "^3.2.5",
+    "@capacitor/angular": "^2.0.0",
+    "@capacitor/core": "latest",
     "bootstrap": "^3.4.1",
     "rxjs": "~6.6.0",
     "tslib": "^2.0.0",
@@ -41,6 +44,7 @@
     "protractor": "~7.0.0",
     "ts-node": "~8.3.0",
     "tslint": "~6.1.0",
-    "typescript": "~4.1.2"
+    "typescript": "~4.1.2",
+    "@capacitor/cli": "latest"
   }
 }

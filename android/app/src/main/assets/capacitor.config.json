@@ -1,0 +1,6 @@
+{
+	"appId": "radhouen.recipe.app",
+	"appName": "recipe-app",
+	"webDir": "dist/recipe-app",
+	"bundledWebRuntime": false
+}

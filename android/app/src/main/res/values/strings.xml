@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">recipe-app</string>
+    <string name="title_activity_main">recipe-app</string>
+    <string name="package_name">radhouen.recipe.app</string>
+    <string name="custom_url_scheme">radhouen.recipe.app</string>
+</resources>
