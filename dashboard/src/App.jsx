@@ -7,6 +7,8 @@ import PortfolioPage from "./pages/PortfolioPage.jsx";
 import RecommendationsPage from "./pages/RecommendationsPage.jsx";
 import MarketPage from "./pages/MarketPage.jsx";
 import AlertsPage from "./pages/AlertsPage.jsx";
+import BacktestPage from "./pages/BacktestPage.jsx";
+import PerformancePage from "./pages/PerformancePage.jsx";
 
 function ProtectedRoute({ children }) {
   const { isAuthenticated } = useAuth();
@@ -30,6 +32,8 @@ export default function App() {
         <Route path="recommendations" element={<RecommendationsPage />} />
         <Route path="market"          element={<MarketPage />} />
         <Route path="alerts"          element={<AlertsPage />} />
+        <Route path="backtest"        element={<BacktestPage />} />
+        <Route path="performance"     element={<PerformancePage />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
