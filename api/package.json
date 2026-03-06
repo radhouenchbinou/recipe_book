@@ -26,5 +26,12 @@
     "jest": "^29.7.0",
     "supertest": "^6.3.4",
     "eslint": "^8.56.0"
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "transform": {},
+    "testMatch": ["**/tests/**/*.test.js"],
+    "coverageDirectory": "coverage",
+    "collectCoverageFrom": ["src/**/*.js"]
   }
 }

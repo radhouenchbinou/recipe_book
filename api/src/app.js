@@ -11,7 +11,12 @@ import rateLimit from "express-rate-limit";
 
 import { logger } from "./middleware/logger.js";
 import { errorHandler } from "./middleware/errorHandler.js";
-import healthRouter from "./routes/health.js";
+import healthRouter          from "./routes/health.js";
+import authRouter            from "./routes/auth.js";
+import portfolioRouter       from "./routes/portfolio.js";
+import recommendationsRouter from "./routes/recommendations.js";
+import marketDataRouter      from "./routes/marketData.js";
+import alertsRouter          from "./routes/alerts.js";
 
 const app = express();
 const PORT = process.env.API_PORT ?? 3000;
@@ -28,13 +33,12 @@ app.use(express.json({ limit: "1mb" }));
 app.use(logger);
 
 // ── Routes ─────────────────────────────────────────────────────────────────
-app.use("/health", healthRouter);
-
-// Sprint 4 routes (registered when built):
-// app.use("/api/v1/portfolio",       portfolioRouter);
-// app.use("/api/v1/recommendations", recommendationsRouter);
-// app.use("/api/v1/market-data",     marketDataRouter);
-// app.use("/api/v1/alerts",          alertsRouter);
+app.use("/health",                    healthRouter);
+app.use("/auth",                      authRouter);
+app.use("/api/v1/portfolio",          portfolioRouter);
+app.use("/api/v1/recommendations",    recommendationsRouter);
+app.use("/api/v1/market-data",        marketDataRouter);
+app.use("/api/v1/alerts",             alertsRouter);
 
 // ── 404 ────────────────────────────────────────────────────────────────────
 app.use((_req, res) => {
