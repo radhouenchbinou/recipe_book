@@ -20,6 +20,7 @@ import alertsRouter          from "./routes/alerts.js";
 import backtestRouter        from "./routes/v2/backtest.js";
 import performanceRouter     from "./routes/v2/performance.js";
 import rebalanceRouter       from "./routes/v2/rebalance.js";
+import equityRouter          from "./routes/v2/equity.js";
 
 const app = express();
 const PORT = process.env.API_PORT ?? 3000;
@@ -45,6 +46,7 @@ app.use("/api/v1/alerts",             alertsRouter);
 app.use("/api/v2/backtest",          backtestRouter);
 app.use("/api/v2/performance",       performanceRouter);
 app.use("/api/v2/rebalance",         rebalanceRouter);
+app.use("/api/v2/equity",            equityRouter);
 
 // ── 404 ────────────────────────────────────────────────────────────────────
 app.use((_req, res) => {
