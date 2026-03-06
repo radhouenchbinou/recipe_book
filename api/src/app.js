@@ -1,0 +1,54 @@
+/**
+ * Trading Bot REST API — Express entry point
+ * Task S1-T4-001
+ */
+
+import "dotenv/config";
+import express from "express";
+import cors from "cors";
+import helmet from "helmet";
+import rateLimit from "express-rate-limit";
+
+import { logger } from "./middleware/logger.js";
+import { errorHandler } from "./middleware/errorHandler.js";
+import healthRouter from "./routes/health.js";
+
+const app = express();
+const PORT = process.env.API_PORT ?? 3000;
+
+// ── Security middleware ────────────────────────────────────────────────────
+app.use(helmet());
+app.use(cors({ origin: process.env.CORS_ORIGIN ?? "*" }));
+app.use(rateLimit({ windowMs: 60_000, max: 300, standardHeaders: true }));
+
+// ── Body parsing ───────────────────────────────────────────────────────────
+app.use(express.json({ limit: "1mb" }));
+
+// ── Request logging ────────────────────────────────────────────────────────
+app.use(logger);
+
+// ── Routes ─────────────────────────────────────────────────────────────────
+app.use("/health", healthRouter);
+
+// Sprint 4 routes (registered when built):
+// app.use("/api/v1/portfolio",       portfolioRouter);
+// app.use("/api/v1/recommendations", recommendationsRouter);
+// app.use("/api/v1/market-data",     marketDataRouter);
+// app.use("/api/v1/alerts",          alertsRouter);
+
+// ── 404 ────────────────────────────────────────────────────────────────────
+app.use((_req, res) => {
+  res.status(404).json({ data: null, error: "Not found", meta: {} });
+});
+
+// ── Error handler ──────────────────────────────────────────────────────────
+app.use(errorHandler);
+
+// ── Start ──────────────────────────────────────────────────────────────────
+if (process.env.NODE_ENV !== "test") {
+  app.listen(PORT, () => {
+    console.log(JSON.stringify({ level: "info", msg: "api.started", port: PORT }));
+  });
+}
+
+export default app;
