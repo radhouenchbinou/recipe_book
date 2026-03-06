@@ -29,6 +29,7 @@ CLAUDE_DAILY_CALL_BUDGET: float = float(
 MARKET_DATA_CRON: str = os.getenv("MARKET_DATA_CRON", "0 18 * * 1-5")   # 6 pm weekdays
 NEWS_FETCH_CRON: str = os.getenv("NEWS_FETCH_CRON", "*/30 * * * *")      # every 30 min
 ANALYSIS_CRON: str = os.getenv("ANALYSIS_CRON", "30 18 * * 1-5")        # 6:30 pm weekdays
+RECOMMENDATION_CRON: str = os.getenv("RECOMMENDATION_CRON", "45 18 * * 1-5")  # 6:45 pm weekdays
 
 # ── Symbols ───────────────────────────────────────────────────────────────
 TRACKED_SYMBOLS: list[str] = os.getenv(

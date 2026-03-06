@@ -4,7 +4,7 @@ from apscheduler.schedulers.blocking import BlockingScheduler
 from apscheduler.triggers.cron import CronTrigger
 import structlog
 
-from config import MARKET_DATA_CRON, NEWS_FETCH_CRON, ANALYSIS_CRON
+from config import MARKET_DATA_CRON, NEWS_FETCH_CRON, ANALYSIS_CRON, RECOMMENDATION_CRON
 
 log = structlog.get_logger()
 
@@ -30,6 +30,13 @@ def job_run_analysis() -> None:
     log.info("job.analysis.done")
 
 
+def job_run_recommendations() -> None:
+    from claude.recommender import run_recommendation_pipeline
+    log.info("job.recommendations.start")
+    results = run_recommendation_pipeline()
+    log.info("job.recommendations.done", results=results)
+
+
 def build_scheduler() -> BlockingScheduler:
     scheduler = BlockingScheduler(timezone="America/New_York")
 
@@ -52,6 +59,13 @@ def build_scheduler() -> BlockingScheduler:
         CronTrigger.from_crontab(ANALYSIS_CRON),
         id="analysis",
         name="Run analysis pipeline",
+        misfire_grace_time=300,
+    )
+    scheduler.add_job(
+        job_run_recommendations,
+        CronTrigger.from_crontab(RECOMMENDATION_CRON),
+        id="recommendations",
+        name="Run recommendation pipeline",
         misfire_grace_time=300,
     )
 
