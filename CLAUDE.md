@@ -8,9 +8,19 @@ Every session **must** follow these rules without exception.
 ## Project Identity
 
 **Name:** AI-Powered Trading Bot
-**Branch:** `claude/trading-bot-project-planning-HUmPC`
-**Phase:** 1 of 3 (5 weeks)
+**Phase:** 1 of 3 (5 weeks) — **Sprint 5 in progress (final sprint)**
 **Goal:** Automated stock/ETF/gold trading with Claude API recommendations, sentiment analysis, and geopolitical risk scoring.
+
+### Active Branch Convention
+All development branches follow: `claude/<description>-HUmPC`
+
+| Sprint | Branch | Status |
+|--------|--------|--------|
+| 1 | `claude/trading-bot-project-planning-HUmPC` | ✅ Merged to main |
+| 2 | `claude/trading-bot-sprint2-analysis-engine-HUmPC` | ✅ Merged to main |
+| 3 | `claude/trading-bot-sprint3-claude-integration-HUmPC` | ✅ Merged to main |
+| 4 | `claude/trading-bot-sprint4-api-dashboard-HUmPC` | ✅ Merged to main |
+| 5 | `claude/trading-bot-sprint5-production-HUmPC` | 🔄 Next |
 
 ---
 
@@ -18,66 +28,140 @@ Every session **must** follow these rules without exception.
 
 ```
 .
-├── CLAUDE.md              ← this file (work contract)
-├── agent.py               ← PM agent CLI
-├── config.py              ← agent configuration
-├── prompts.py             ← agent prompts
-├── requirements.txt       ← Python dependencies
-├── api/                   ← Node.js Express REST API
+├── CLAUDE.md                    ← this file (work contract)
+├── agent.py                     ← PM agent CLI
+├── config.py                    ← agent config
+├── prompts.py                   ← agent prompts
+├── requirements.txt             ← PM agent Python deps
+│
+├── api/                         ← Node.js 20 Express REST API
 │   ├── src/
-│   │   ├── routes/        ← endpoint handlers
-│   │   ├── middleware/    ← auth, logging, error handling
-│   │   └── services/      ← business logic
+│   │   ├── app.js               ← entry point, all routes registered
+│   │   ├── middleware/
+│   │   │   ├── auth.js          ← JWT requireAuth + signToken
+│   │   │   ├── logger.js        ← structured JSON request logger
+│   │   │   └── errorHandler.js  ← { data, error, meta } envelope
+│   │   ├── routes/
+│   │   │   ├── health.js        ← GET /health (postgres + redis checks)
+│   │   │   ├── auth.js          ← POST /auth/login → JWT
+│   │   │   ├── portfolio.js     ← GET /api/v1/portfolio + /positions
+│   │   │   ├── recommendations.js ← GET /api/v1/recommendations[/:symbol]
+│   │   │   ├── marketData.js    ← GET /api/v1/market-data/:symbol
+│   │   │   └── alerts.js        ← CRUD /api/v1/alerts
+│   │   └── services/
+│   │       ├── db.js            ← pg connection pool
+│   │       └── redis.js         ← ioredis + cached() helper
+│   ├── tests/                   ← Jest + supertest API tests
 │   ├── package.json
 │   └── Dockerfile
-├── bot/                   ← Python trading bot engine
-│   ├── collectors/        ← market data + news fetchers
-│   ├── analysis/          ← indicators, sentiment, geo risk
-│   ├── claude/            ← Claude API integration
-│   ├── broker/            ← Alpaca connector
-│   ├── scheduler/         ← APScheduler jobs
-│   ├── main.py
+│
+├── bot/                         ← Python 3.11 trading bot engine
+│   ├── main.py                  ← entry point
+│   ├── config.py                ← env-var config
+│   ├── db.py                    ← SQLAlchemy session factory
+│   ├── collectors/
+│   │   ├── market_data.py       ← Yahoo Finance OHLCV (S1-T2-001)
+│   │   └── news_fetcher.py      ← RSS news + symbol tagging (S1-T2-002)
+│   ├── broker/
+│   │   └── connector.py         ← Alpaca paper trading (S1-T3-001)
+│   ├── analysis/
+│   │   ├── indicators.py        ← RSI, MACD, Bollinger, SMA/EMA (S2-T1-001)
+│   │   ├── sentiment.py         ← FinBERT + lexicon fallback (S2-T2-001)
+│   │   ├── geo_risk.py          ← geo event detection, 0-100 score (S2-T3-001)
+│   │   └── pipeline.py          ← orchestrator → composite score → DB
+│   ├── claude/
+│   │   ├── usage_tracker.py     ← daily token budget enforcement
+│   │   ├── prompt_builder.py    ← structured <2000-token prompts
+│   │   ├── client.py            ← Anthropic SDK + retry
+│   │   ├── trigger.py           ← smart trigger (delta/neutral/budget)
+│   │   ├── parser.py            ← JSON response parser + DB persist
+│   │   ├── fallback.py          ← rule-based recommender
+│   │   └── recommender.py       ← top-level orchestrator
+│   ├── scheduler/
+│   │   ├── jobs.py              ← APScheduler cron jobs (4 jobs)
+│   │   └── health.py            ← /health HTTP server
+│   ├── tests/                   ← pytest unit tests (all modules)
+│   ├── requirements.txt
+│   ├── pytest.ini
 │   └── Dockerfile
-├── dashboard/             ← React frontend
+│
+├── dashboard/                   ← React 18 + Vite frontend
 │   ├── src/
-│   │   ├── components/
+│   │   ├── main.jsx             ← React entry, QueryClient, Router
+│   │   ├── App.jsx              ← routes + ProtectedRoute
+│   │   ├── index.css            ← dark theme CSS vars
+│   │   ├── hooks/
+│   │   │   └── useAuth.js       ← JWT login/logout state
+│   │   ├── services/
+│   │   │   └── api.js           ← axios client + auth interceptor
 │   │   ├── pages/
-│   │   └── services/      ← API client
+│   │   │   ├── LoginPage.jsx
+│   │   │   ├── DashboardLayout.jsx  ← sidebar nav
+│   │   │   ├── PortfolioPage.jsx    ← account stats + positions table
+│   │   │   ├── RecommendationsPage.jsx ← cards + filters
+│   │   │   ├── MarketPage.jsx       ← heatmap tiles + price chart
+│   │   │   └── AlertsPage.jsx       ← CRUD alert management
+│   │   └── __tests__/           ← Vitest + Testing Library
 │   ├── package.json
-│   └── Dockerfile
-└── infra/                 ← Docker Compose + K8s manifests
-    ├── docker-compose.yml
-    ├── docker-compose.prod.yml
+│   ├── vite.config.js
+│   ├── nginx.conf               ← SPA fallback + API proxy
+│   └── Dockerfile               ← multi-stage build
+│
+└── infra/
+    ├── docker-compose.yml       ← all 5 services (postgres, redis, api, bot, dashboard)
     └── postgres/
-        └── schema.sql
+        └── schema.sql           ← 8 tables + indexes + seed symbols
 ```
 
 ---
 
-## Sprint Plan (Phase 1)
+## Sprint Status
 
-| Sprint | Week | Focus |
-|--------|------|-------|
-| 1 | Week 1 | Docker env · DB schema · Data pipeline · Broker connector |
-| 2 | Week 2 | Technical indicators · Sentiment · Geo risk scoring |
-| 3 | Week 3 | Claude API integration · Smart trigger · Fallback recommender |
-| 4 | Week 4 | REST API endpoints · React dashboard |
-| 5 | Week 5 | CI/CD · Load testing · Security · Monitoring · Go/No-Go |
+| Sprint | Week | Focus | Status |
+|--------|------|-------|--------|
+| 1 | Week 1 | Docker · DB schema · Data pipeline · Broker connector | ✅ Done |
+| 2 | Week 2 | Technical indicators · Sentiment · Geo risk scoring | ✅ Done |
+| 3 | Week 3 | Claude API · Smart trigger · Fallback recommender | ✅ Done |
+| 4 | Week 4 | REST API endpoints · React dashboard | ✅ Done |
+| 5 | Week 5 | CI/CD · Load testing · Security · Monitoring · Go/No-Go | 🔄 Next |
 
 ---
 
 ## Technology Stack
 
-| Layer | Technology |
-|-------|-----------|
-| Bot Engine | Python 3.11, APScheduler, TA-Lib, FinBERT |
-| API Server | Node.js 20, Express 4, JWT auth |
-| Frontend | React 18, Vite, Recharts |
-| Database | PostgreSQL 15 |
-| Cache | Redis 7 |
-| Broker | Alpaca Markets API (paper trading in Phase 1) |
-| AI | Anthropic Claude API (`claude-sonnet-4-6`) |
-| Infra | Docker Compose (dev), Kubernetes (prod) |
+| Layer | Technology | Version |
+|-------|-----------|---------|
+| Bot Engine | Python, APScheduler, FinBERT | 3.11 |
+| API Server | Node.js, Express, JWT | 20 / 4.x |
+| Frontend | React, Vite, Recharts, TanStack Query | 18 / 5.x |
+| Database | PostgreSQL | 15 |
+| Cache | Redis | 7 |
+| Broker | Alpaca Markets API (paper only in Phase 1) | v2 |
+| AI | Anthropic Claude (`claude-sonnet-4-6`) | — |
+| Infra | Docker Compose (dev) | — |
+| Testing (Python) | pytest, pytest-cov | — |
+| Testing (Node) | Jest, supertest | — |
+| Testing (React) | Vitest, Testing Library | — |
+
+---
+
+## API Endpoints
+
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| POST | `/auth/login` | — | Get JWT token |
+| GET | `/health` | — | Service health check |
+| GET | `/api/v1/portfolio` | ✅ | Account summary (Alpaca) |
+| GET | `/api/v1/portfolio/positions` | ✅ | Open positions |
+| GET | `/api/v1/recommendations` | ✅ | Paginated feed (filter: symbol, source, action) |
+| GET | `/api/v1/recommendations/:symbol` | ✅ | Latest for one symbol |
+| GET | `/api/v1/market-data/:symbol` | ✅ | OHLCV + indicators (5-min cache) |
+| GET | `/api/v1/alerts` | ✅ | List all alerts |
+| POST | `/api/v1/alerts` | ✅ | Create alert |
+| DELETE | `/api/v1/alerts/:id` | ✅ | Delete alert |
+| PATCH | `/api/v1/alerts/:id` | ✅ | Toggle active/inactive |
+
+All responses: `{ data, error, meta }` envelope.
 
 ---
 
@@ -85,14 +169,16 @@ Every session **must** follow these rules without exception.
 
 Never hardcode secrets. All credentials go in `.env` (gitignored).
 
-```
-# Broker
+```bash
+# Broker (paper only in Phase 1)
 ALPACA_API_KEY=...
 ALPACA_SECRET_KEY=...
 ALPACA_BASE_URL=https://paper-api.alpaca.markets
 
-# Claude
+# Claude AI
 ANTHROPIC_API_KEY=...
+CLAUDE_MODEL=claude-sonnet-4-6
+CLAUDE_DAILY_CALL_BUDGET=0.25     # max 25% of daily quota
 
 # Database
 DATABASE_URL=postgresql://trader:trader@localhost:5432/tradingbot
@@ -101,12 +187,18 @@ DATABASE_URL=postgresql://trader:trader@localhost:5432/tradingbot
 REDIS_URL=redis://localhost:6379
 
 # API
-JWT_SECRET=...
+JWT_SECRET=...                    # change in production
 API_PORT=3000
 
-# Bot
-BOT_ENV=development
-CLAUDE_DAILY_CALL_BUDGET=0.25   # max 25% of daily Claude quota
+# Dashboard (dev)
+DEV_USERNAME=admin
+DEV_PASSWORD=changeme
+
+# Bot scheduler (optional overrides)
+MARKET_DATA_CRON="0 18 * * 1-5"
+NEWS_FETCH_CRON="*/30 * * * *"
+ANALYSIS_CRON="30 18 * * 1-5"
+RECOMMENDATION_CRON="45 18 * * 1-5"
 ```
 
 ---
@@ -122,91 +214,90 @@ CLAUDE_DAILY_CALL_BUDGET=0.25   # max 25% of daily Claude quota
 
 ### Node.js (api/)
 - ES Modules (`"type": "module"` in package.json)
-- `eslint` + `prettier` enforced
 - All routes must have input validation (`zod`)
 - All endpoints must return `{ data, error, meta }` envelope
 - HTTP responses: 200/201 success, 400 validation, 401 auth, 500 server error
 
 ### React (dashboard/)
 - Functional components only; no class components
-- `TypeScript` strict mode
 - `react-query` for all server state
-- No inline styles; use CSS modules or Tailwind
+- `useAuth` hook for all auth state
 
 ### General
 - No secrets in code or git history
 - Every PR must have tests
-- Commit messages: `type(scope): short description` (e.g. `feat(bot): add RSI indicator`)
+- Commit messages: `type(scope): description`
+  - Types: `feat`, `fix`, `chore`, `docs`, `test`, `refactor`, `ci`
 
 ---
 
 ## Commands
 
 ```bash
-# Start all services
+# ── Docker ─────────────────────────────────────────────────────────────────
+# Start all 5 services (postgres, redis, api, bot, dashboard)
 docker-compose -f infra/docker-compose.yml up
 
-# Run bot locally
-cd bot && python main.py
+# Rebuild a single service
+docker-compose -f infra/docker-compose.yml up --build api
 
-# Run API locally
-cd api && npm run dev
+# ── Bot ────────────────────────────────────────────────────────────────────
+cd bot && python main.py                        # run bot locally
+cd bot && pytest --cov=. --cov-report=term-missing  # run all bot tests
 
-# Run dashboard locally
-cd dashboard && npm run dev
+# ── API ────────────────────────────────────────────────────────────────────
+cd api && npm run dev                           # run API locally (hot-reload)
+cd api && npm test                              # run API tests
 
-# Run all Python tests
-cd bot && pytest --cov=. --cov-report=term-missing
+# ── Dashboard ──────────────────────────────────────────────────────────────
+cd dashboard && npm run dev                     # run dashboard locally (:5173)
+cd dashboard && npm test                        # run component tests
 
-# Run API tests
-cd api && npm test
+# ── Database ───────────────────────────────────────────────────────────────
+cd bot && alembic upgrade head                  # apply migrations
+cd bot && alembic downgrade -1                  # rollback one migration
 
-# DB migrations
-cd bot && alembic upgrade head
-cd bot && alembic downgrade -1
-
-# PM agent
-python agent.py                             # interactive
-python agent.py --action plan_phase1        # generate plan
-python agent.py --action sprint_tasks --sprint 2
-python agent.py --action status_report --week 1
+# ── PM Agent ───────────────────────────────────────────────────────────────
+python agent.py                                 # interactive session
+python agent.py --action plan_phase1            # generate sprint plan
+python agent.py --action sprint_tasks --sprint 5
+python agent.py --action status_report --week 4
+python agent.py --action identify_risks
 ```
 
 ---
 
 ## Git Workflow
 
-- **Always develop on:** `claude/trading-bot-project-planning-HUmPC`
-- **Never push to main** without explicit permission
+- **Branch pattern:** `claude/<description>-HUmPC`
+- **Never push directly to main** — always branch → merge
 - Commit after every meaningful unit of work
 - Push at end of every session
-- Commit format: `type(scope): message`
-  - Types: `feat`, `fix`, `chore`, `docs`, `test`, `refactor`, `ci`
+- Create new branch at the start of each sprint
 
 ---
 
 ## Decision Gates
 
-Before advancing to the next sprint, **all** gate criteria must pass:
-
-| Gate | Sprint → Sprint | Blocker if failed |
-|------|-----------------|-------------------|
-| G1 | S1 → S2 | Docker up, DB schema complete, data flowing, Alpaca connected |
-| G2 | S2 → S3 | All 3 score types producing values, tests green |
-| G3 | S3 → S4 | Claude recommendations working, fallback tested, usage capped |
-| G4 | S4 → S5 | API <200ms p99, dashboard showing live data |
-| G5 | S5 → Prod | CI green, load test passed, security audit clean |
+| Gate | Transition | Criteria | Status |
+|------|-----------|----------|--------|
+| G1 | S1 → S2 | Docker up, DB schema, data pipeline, Alpaca connected | ✅ Passed |
+| G2 | S2 → S3 | All 3 score types producing values, tests green | ✅ Passed |
+| G3 | S3 → S4 | Claude recommendations working, fallback tested, usage capped | ✅ Passed |
+| G4 | S4 → S5 | API <200ms p99, dashboard showing live data | ✅ Passed |
+| G5 | S5 → Prod | CI green, load test passed, security audit clean, E2E passing | ⏳ Pending |
 
 ---
 
 ## Non-Negotiables
 
-1. **Paper trading only** in Phase 1 — no real money API calls
+1. **Paper trading only** in Phase 1 — no real money API calls ever
 2. **Claude usage cap** — never exceed 30% of daily quota without explicit approval
 3. **Tests before merge** — no code merged without passing tests
 4. **No `.env` in git** — ever
 5. **Structured logging** — all services must emit JSON logs
-6. **Health endpoints** — every service must expose `/health`
+6. **Health endpoints** — every service exposes `/health`
+7. **`{ data, error, meta }` envelope** — all API responses
 
 ---
 
