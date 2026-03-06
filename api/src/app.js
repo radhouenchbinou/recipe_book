@@ -17,6 +17,9 @@ import portfolioRouter       from "./routes/portfolio.js";
 import recommendationsRouter from "./routes/recommendations.js";
 import marketDataRouter      from "./routes/marketData.js";
 import alertsRouter          from "./routes/alerts.js";
+import backtestRouter        from "./routes/v2/backtest.js";
+import performanceRouter     from "./routes/v2/performance.js";
+import rebalanceRouter       from "./routes/v2/rebalance.js";
 
 const app = express();
 const PORT = process.env.API_PORT ?? 3000;
@@ -39,6 +42,9 @@ app.use("/api/v1/portfolio",          portfolioRouter);
 app.use("/api/v1/recommendations",    recommendationsRouter);
 app.use("/api/v1/market-data",        marketDataRouter);
 app.use("/api/v1/alerts",             alertsRouter);
+app.use("/api/v2/backtest",          backtestRouter);
+app.use("/api/v2/performance",       performanceRouter);
+app.use("/api/v2/rebalance",         rebalanceRouter);
 
 // ── 404 ────────────────────────────────────────────────────────────────────
 app.use((_req, res) => {
