@@ -8,7 +8,7 @@ Every session **must** follow these rules without exception.
 ## Project Identity
 
 **Name:** AI-Powered Trading Bot
-**Phase:** 1 of 3 (5 weeks) — **COMPLETE ✅ — Gate G5 pending final review**
+**Phase:** 2 of 3 — **Sprint 1 COMPLETE ✅ — Backtesting · Rebalancer · Risk Guard · Analytics API**
 **Goal:** Automated stock/ETF/gold trading with Claude API recommendations, sentiment analysis, and geopolitical risk scoring.
 
 ### Active Branch Convention
@@ -16,11 +16,12 @@ All development branches follow: `claude/<description>-HUmPC`
 
 | Sprint | Branch | Status |
 |--------|--------|--------|
-| 1 | `claude/trading-bot-project-planning-HUmPC` | ✅ Merged to main |
-| 2 | `claude/trading-bot-sprint2-analysis-engine-HUmPC` | ✅ Merged to main |
-| 3 | `claude/trading-bot-sprint3-claude-integration-HUmPC` | ✅ Merged to main |
-| 4 | `claude/trading-bot-sprint4-api-dashboard-HUmPC` | ✅ Merged to main |
-| 5 | `claude/trading-bot-sprint5-production-HUmPC` | ✅ Merged to main |
+| P1-S1 | `claude/trading-bot-project-planning-HUmPC` | ✅ Merged to main |
+| P1-S2 | `claude/trading-bot-sprint2-analysis-engine-HUmPC` | ✅ Merged to main |
+| P1-S3 | `claude/trading-bot-sprint3-claude-integration-HUmPC` | ✅ Merged to main |
+| P1-S4 | `claude/trading-bot-sprint4-api-dashboard-HUmPC` | ✅ Merged to main |
+| P1-S5 | `claude/trading-bot-sprint5-production-HUmPC` | ✅ Merged to main |
+| P2-S1 | `claude/trading-bot-phase2-sprint1-HUmPC` | ✅ Complete — pending merge |
 
 ---
 
@@ -47,7 +48,11 @@ All development branches follow: `claude/<description>-HUmPC`
 │   │   │   ├── portfolio.js     ← GET /api/v1/portfolio + /positions
 │   │   │   ├── recommendations.js ← GET /api/v1/recommendations[/:symbol]
 │   │   │   ├── marketData.js    ← GET /api/v1/market-data/:symbol
-│   │   │   └── alerts.js        ← CRUD /api/v1/alerts
+│   │   │   ├── alerts.js        ← CRUD /api/v1/alerts
+│   │   │   └── v2/              ← Phase 2 endpoints
+│   │   │       ├── backtest.js  ← GET /api/v2/backtest[/:symbol]
+│   │   │       ├── performance.js ← GET /api/v2/performance[/:symbol]
+│   │   │       └── rebalance.js ← GET /api/v2/rebalance · POST /api/v2/rebalance/execute
 │   │   └── services/
 │   │       ├── db.js            ← pg connection pool
 │   │       └── redis.js         ← ioredis + cached() helper
@@ -80,6 +85,13 @@ All development branches follow: `claude/<description>-HUmPC`
 │   ├── scheduler/
 │   │   ├── jobs.py              ← APScheduler cron jobs (4 jobs)
 │   │   └── health.py            ← /health HTTP server
+│   ├── backtest/                ← Phase 2: backtesting engine
+│   │   └── engine.py            ← BacktestEngine (next-day open, Sharpe, drawdown, win rate)
+│   ├── portfolio/               ← Phase 2: portfolio management
+│   │   ├── rebalancer.py        ← score-weighted target allocation (80/20 split)
+│   │   └── performance.py       ← PerformanceAnalytics (P&L, Sharpe, drawdown aggregation)
+│   ├── risk/                    ← Phase 2: live trading risk guard
+│   │   └── guard.py             ← RiskGuard (position limits, stop-loss, daily loss cap)
 │   ├── tests/                   ← pytest unit tests (all modules)
 │   ├── requirements.txt
 │   ├── pytest.ini
@@ -130,6 +142,8 @@ All development branches follow: `claude/<description>-HUmPC`
 
 ## Sprint Status
 
+### Phase 1 (Complete ✅)
+
 | Sprint | Week | Focus | Status |
 |--------|------|-------|--------|
 | 1 | Week 1 | Docker · DB schema · Data pipeline · Broker connector | ✅ Done |
@@ -137,6 +151,14 @@ All development branches follow: `claude/<description>-HUmPC`
 | 3 | Week 3 | Claude API · Smart trigger · Fallback recommender | ✅ Done |
 | 4 | Week 4 | REST API endpoints · React dashboard | ✅ Done |
 | 5 | Week 5 | CI/CD · Load testing · Security · Monitoring · E2E tests | ✅ Done |
+
+### Phase 2 (In Progress 🔄)
+
+| Sprint | Focus | Status |
+|--------|-------|--------|
+| P2-S1 | Backtesting engine · Portfolio rebalancer · Performance analytics · Risk guard · API v2 | ✅ Done |
+| P2-S2 | Live trading prep · Enhanced dashboard (P&L charts, backtest results) | ⏳ Upcoming |
+| P2-S3 | Portfolio optimization · Multi-symbol rebalancing · Advanced risk metrics | ⏳ Upcoming |
 
 ---
 
@@ -173,6 +195,12 @@ All development branches follow: `claude/<description>-HUmPC`
 | POST | `/api/v1/alerts` | ✅ | Create alert |
 | DELETE | `/api/v1/alerts/:id` | ✅ | Delete alert |
 | PATCH | `/api/v1/alerts/:id` | ✅ | Toggle active/inactive |
+| GET | `/api/v2/backtest` | ✅ | List symbols with backtest data |
+| GET | `/api/v2/backtest/:symbol` | ✅ | Backtest signals for a symbol |
+| GET | `/api/v2/performance` | ✅ | Portfolio-level performance aggregate |
+| GET | `/api/v2/performance/:symbol` | ✅ | Per-symbol performance history |
+| GET | `/api/v2/rebalance` | ✅ | Compute rebalance plan (dry run) |
+| POST | `/api/v2/rebalance/execute` | ✅ | Queue rebalance execution (paper only) |
 
 All responses: `{ data, error, meta }` envelope.
 
@@ -319,7 +347,8 @@ python agent.py --action identify_risks
 | G2 | S2 → S3 | All 3 score types producing values, tests green | ✅ Passed |
 | G3 | S3 → S4 | Claude recommendations working, fallback tested, usage capped | ✅ Passed |
 | G4 | S4 → S5 | API <200ms p99, dashboard showing live data | ✅ Passed |
-| G5 | S5 → Prod | CI green, load test passed, security audit clean, E2E passing | ✅ Ready for review |
+| G5 | S5 → Prod | CI green, load test passed, security audit clean, E2E passing | ✅ Passed |
+| G6 | P2-S1 → P2-S2 | Backtest engine, rebalancer, risk guard, API v2 tests green | ✅ Ready for review |
 
 ---
 
