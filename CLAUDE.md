@@ -8,7 +8,7 @@ Every session **must** follow these rules without exception.
 ## Project Identity
 
 **Name:** AI-Powered Trading Bot
-**Phase:** 2 of 3 — **Sprint 2 COMPLETE ✅ — Live Executor · Equity Chart API · Performance + Backtest Dashboard**
+**Phase:** 2 of 3 — **Sprint 3 COMPLETE ✅ — Portfolio Optimizer · Drift Detection · VaR/CVaR/Beta · Risk Dashboard**
 **Goal:** Automated stock/ETF/gold trading with Claude API recommendations, sentiment analysis, and geopolitical risk scoring.
 
 ### Active Branch Convention
@@ -22,7 +22,8 @@ All development branches follow: `claude/<description>-HUmPC`
 | P1-S4 | `claude/trading-bot-sprint4-api-dashboard-HUmPC` | ✅ Merged to main |
 | P1-S5 | `claude/trading-bot-sprint5-production-HUmPC` | ✅ Merged to main |
 | P2-S1 | `claude/trading-bot-phase2-sprint1-HUmPC` | ✅ Merged to main |
-| P2-S2 | `claude/trading-bot-phase2-sprint2-HUmPC` | ✅ Complete — pending merge |
+| P2-S2 | `claude/trading-bot-phase2-sprint2-HUmPC` | ✅ Merged to main |
+| P2-S3 | `claude/trading-bot-phase2-sprint3-HUmPC` | ✅ Complete — pending merge |
 
 ---
 
@@ -54,7 +55,9 @@ All development branches follow: `claude/<description>-HUmPC`
 │   │   │       ├── backtest.js  ← GET /api/v2/backtest[/:symbol]
 │   │   │       ├── performance.js ← GET /api/v2/performance[/:symbol]
 │   │   │       ├── rebalance.js ← GET /api/v2/rebalance · POST /api/v2/rebalance/execute
-│   │   │       └── equity.js    ← GET /api/v2/equity[/:symbol]?days=N (equity time-series)
+│   │   │       ├── equity.js    ← GET /api/v2/equity[/:symbol]?days=N (equity time-series)
+│   │   │       ├── optimize.js  ← GET /api/v2/optimize[/drift] (vol-dampened weights)
+│   │   │       └── risk.js      ← GET /api/v2/risk[/:symbol] (VaR, CVaR, beta, corr)
 │   │   └── services/
 │   │       ├── db.js            ← pg connection pool
 │   │       └── redis.js         ← ioredis + cached() helper
@@ -91,9 +94,12 @@ All development branches follow: `claude/<description>-HUmPC`
 │   │   └── engine.py            ← BacktestEngine (next-day open, Sharpe, drawdown, win rate)
 │   ├── portfolio/               ← Phase 2: portfolio management
 │   │   ├── rebalancer.py        ← score-weighted target allocation (80/20 split)
-│   │   └── performance.py       ← PerformanceAnalytics (P&L, Sharpe, drawdown aggregation)
-│   ├── risk/                    ← Phase 2: live trading risk guard
-│   │   └── guard.py             ← RiskGuard (position limits, stop-loss, daily loss cap)
+│   │   ├── performance.py       ← PerformanceAnalytics (P&L, Sharpe, drawdown aggregation)
+│   │   ├── optimizer.py         ← PortfolioOptimizer (score/vol-weighted, max-weight cap)
+│   │   └── drift.py             ← DriftDetector (threshold-based rebalance orders)
+│   ├── risk/                    ← Phase 2: live trading risk guard + advanced metrics
+│   │   ├── guard.py             ← RiskGuard (position limits, stop-loss, daily loss cap)
+│   │   └── metrics.py           ← RiskMetrics (VaR, CVaR, beta, correlation matrix)
 │   ├── trading/                 ← Phase 2: live order execution
 │   │   └── executor.py          ← LiveTradeExecutor (risk-checked paper orders, stop-loss scan)
 │   ├── tests/                   ← pytest unit tests (all modules)
@@ -118,7 +124,8 @@ All development branches follow: `claude/<description>-HUmPC`
 │   │   │   ├── MarketPage.jsx       ← heatmap tiles + price chart
 │   │   │   ├── AlertsPage.jsx       ← CRUD alert management
 │   │   │   ├── PerformancePage.jsx  ← equity chart · rec stats · rebalance panel (Phase 2)
-│   │   │   └── BacktestPage.jsx     ← signal history by symbol (Phase 2)
+│   │   │   ├── BacktestPage.jsx     ← signal history by symbol (Phase 2)
+│   │   │   └── RiskPage.jsx         ← optimizer weights · drift · VaR/beta · corr heatmap (P2-S3)
 │   │   └── __tests__/           ← Vitest + Testing Library
 │   ├── package.json
 │   ├── vite.config.js
@@ -164,7 +171,7 @@ All development branches follow: `claude/<description>-HUmPC`
 |--------|-------|--------|
 | P2-S1 | Backtesting engine · Portfolio rebalancer · Performance analytics · Risk guard · API v2 | ✅ Done |
 | P2-S2 | Live trade executor · Equity chart API · Performance + Backtest dashboard pages | ✅ Done |
-| P2-S3 | Portfolio optimization · Multi-symbol rebalancing · Advanced risk metrics | ⏳ Upcoming |
+| P2-S3 | Portfolio optimizer · Drift detection · VaR/CVaR/Beta · Risk dashboard | ✅ Done |
 
 ---
 
@@ -209,6 +216,10 @@ All development branches follow: `claude/<description>-HUmPC`
 | POST | `/api/v2/rebalance/execute` | ✅ | Queue rebalance execution (paper only) |
 | GET | `/api/v2/equity` | ✅ | Portfolio equity time-series (days param) |
 | GET | `/api/v2/equity/:symbol` | ✅ | Per-symbol equity curve for P&L chart |
+| GET | `/api/v2/optimize` | ✅ | Vol-dampened target weights (score/σ model) |
+| GET | `/api/v2/optimize/drift` | ✅ | Detect allocation drift vs target weights |
+| GET | `/api/v2/risk` | ✅ | Portfolio VaR, CVaR, beta, correlation matrix |
+| GET | `/api/v2/risk/:symbol` | ✅ | Per-symbol VaR, CVaR, annualised vol, beta |
 
 All responses: `{ data, error, meta }` envelope.
 
@@ -357,7 +368,8 @@ python agent.py --action identify_risks
 | G4 | S4 → S5 | API <200ms p99, dashboard showing live data | ✅ Passed |
 | G5 | S5 → Prod | CI green, load test passed, security audit clean, E2E passing | ✅ Passed |
 | G6 | P2-S1 → P2-S2 | Backtest engine, rebalancer, risk guard, API v2 tests green | ✅ Passed |
-| G7 | P2-S2 → P2-S3 | Executor paper trades work, equity chart renders, dashboard tests green | ✅ Ready for review |
+| G7 | P2-S2 → P2-S3 | Executor paper trades work, equity chart renders, dashboard tests green | ✅ Passed |
+| G8 | P2-S3 → P3 | Optimizer weights valid, VaR/beta computable, risk page renders | ✅ Ready for review |
 
 ---
 

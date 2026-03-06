@@ -9,6 +9,7 @@ import MarketPage from "./pages/MarketPage.jsx";
 import AlertsPage from "./pages/AlertsPage.jsx";
 import BacktestPage from "./pages/BacktestPage.jsx";
 import PerformancePage from "./pages/PerformancePage.jsx";
+import RiskPage from "./pages/RiskPage.jsx";
 
 function ProtectedRoute({ children }) {
   const { isAuthenticated } = useAuth();
@@ -34,6 +35,7 @@ export default function App() {
         <Route path="alerts"          element={<AlertsPage />} />
         <Route path="backtest"        element={<BacktestPage />} />
         <Route path="performance"     element={<PerformancePage />} />
+        <Route path="risk"            element={<RiskPage />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
