@@ -8,7 +8,8 @@
     "dev": "node --watch src/app.js",
     "start": "node src/app.js",
     "test": "node --experimental-vm-modules node_modules/.bin/jest --coverage",
-    "lint": "eslint src/**/*.js"
+    "lint": "eslint src/**/*.js",
+    "e2e": "node --test ../infra/e2e/acceptance.test.js"
   },
   "dependencies": {
     "express": "^4.18.2",

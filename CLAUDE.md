@@ -8,7 +8,7 @@ Every session **must** follow these rules without exception.
 ## Project Identity
 
 **Name:** AI-Powered Trading Bot
-**Phase:** 1 of 3 (5 weeks) — **Sprint 5 in progress (final sprint)**
+**Phase:** 1 of 3 (5 weeks) — **COMPLETE ✅ — Gate G5 pending final review**
 **Goal:** Automated stock/ETF/gold trading with Claude API recommendations, sentiment analysis, and geopolitical risk scoring.
 
 ### Active Branch Convention
@@ -20,7 +20,7 @@ All development branches follow: `claude/<description>-HUmPC`
 | 2 | `claude/trading-bot-sprint2-analysis-engine-HUmPC` | ✅ Merged to main |
 | 3 | `claude/trading-bot-sprint3-claude-integration-HUmPC` | ✅ Merged to main |
 | 4 | `claude/trading-bot-sprint4-api-dashboard-HUmPC` | ✅ Merged to main |
-| 5 | `claude/trading-bot-sprint5-production-HUmPC` | 🔄 Next |
+| 5 | `claude/trading-bot-sprint5-production-HUmPC` | ✅ Merged to main |
 
 ---
 
@@ -109,8 +109,21 @@ All development branches follow: `claude/<description>-HUmPC`
 │
 └── infra/
     ├── docker-compose.yml       ← all 5 services (postgres, redis, api, bot, dashboard)
-    └── postgres/
-        └── schema.sql           ← 8 tables + indexes + seed symbols
+    ├── docker-compose.prod.yml  ← production compose (GHCR images, secrets via env)
+    ├── postgres/
+    │   └── schema.sql           ← 8 tables + indexes + seed symbols
+    ├── k6/
+    │   ├── smoke-test.js        ← 1 VU, 30s — sanity check
+    │   └── load-test.js         ← 100 VU ramp, p99 < 500ms thresholds
+    ├── e2e/
+    │   └── acceptance.test.js   ← full user journey E2E (Node test runner)
+    └── monitoring/
+        ├── prometheus/
+        │   ├── prometheus.yml   ← scrape configs (api, bot, pg, redis)
+        │   └── alerts.yml       ← 12 alert rules (down, latency, budget, disk)
+        └── grafana/
+            └── dashboards/
+                └── trading-bot.json  ← 9-panel overview dashboard
 ```
 
 ---
@@ -123,7 +136,7 @@ All development branches follow: `claude/<description>-HUmPC`
 | 2 | Week 2 | Technical indicators · Sentiment · Geo risk scoring | ✅ Done |
 | 3 | Week 3 | Claude API · Smart trigger · Fallback recommender | ✅ Done |
 | 4 | Week 4 | REST API endpoints · React dashboard | ✅ Done |
-| 5 | Week 5 | CI/CD · Load testing · Security · Monitoring · Go/No-Go | 🔄 Next |
+| 5 | Week 5 | CI/CD · Load testing · Security · Monitoring · E2E tests | ✅ Done |
 
 ---
 
@@ -257,6 +270,27 @@ cd dashboard && npm test                        # run component tests
 cd bot && alembic upgrade head                  # apply migrations
 cd bot && alembic downgrade -1                  # rollback one migration
 
+# ── Load & E2E Tests ───────────────────────────────────────────────────────
+# Smoke test (1 VU, 30s — quick sanity)
+k6 run infra/k6/smoke-test.js -e BASE_URL=http://localhost:3000
+
+# Load test (100 VU ramp, p99 < 500ms)
+k6 run infra/k6/load-test.js \
+  -e BASE_URL=http://localhost:3000 \
+  -e USERNAME=admin \
+  -e PASSWORD=changeme
+
+# E2E acceptance tests (full user journey)
+BASE_URL=http://localhost:3000 cd api && npm run e2e
+
+# ── CI/CD ───────────────────────────────────────────────────────────────────
+# Workflows: .github/workflows/ci.yml (on every push/PR)
+#            .github/workflows/deploy.yml (on merge to main)
+
+# ── Monitoring ──────────────────────────────────────────────────────────────
+# Prometheus: http://localhost:9090
+# Grafana:    http://localhost:3001 (admin / $GRAFANA_PASSWORD)
+
 # ── PM Agent ───────────────────────────────────────────────────────────────
 python agent.py                                 # interactive session
 python agent.py --action plan_phase1            # generate sprint plan
@@ -285,7 +319,7 @@ python agent.py --action identify_risks
 | G2 | S2 → S3 | All 3 score types producing values, tests green | ✅ Passed |
 | G3 | S3 → S4 | Claude recommendations working, fallback tested, usage capped | ✅ Passed |
 | G4 | S4 → S5 | API <200ms p99, dashboard showing live data | ✅ Passed |
-| G5 | S5 → Prod | CI green, load test passed, security audit clean, E2E passing | ⏳ Pending |
+| G5 | S5 → Prod | CI green, load test passed, security audit clean, E2E passing | ✅ Ready for review |
 
 ---
 

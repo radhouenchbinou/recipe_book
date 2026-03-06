@@ -1,0 +1,104 @@
+groups:
+  - name: trading_bot_alerts
+    rules:
+      # ── API Health ───────────────────────────────────────────────────────
+      - alert: APIDown
+        expr: up{job="api"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Trading Bot API is down"
+          description: "The API service has been unreachable for more than 1 minute."
+
+      - alert: APIHighLatency
+        expr: histogram_quantile(0.99, rate(http_request_duration_seconds_bucket{job="api"}[5m])) > 0.5
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "API p99 latency > 500ms"
+          description: "p99 latency is {{ $value | humanizeDuration }} (threshold: 500ms)."
+
+      - alert: APIHighErrorRate
+        expr: rate(http_requests_total{job="api",status=~"5.."}[5m]) / rate(http_requests_total{job="api"}[5m]) > 0.05
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "API error rate > 5%"
+          description: "Error rate is {{ $value | humanizePercentage }}."
+
+      # ── Bot Health ───────────────────────────────────────────────────────
+      - alert: BotDown
+        expr: up{job="bot"} == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Trading Bot engine is down"
+          description: "The bot has been unreachable for more than 2 minutes."
+
+      - alert: BotJobMissed
+        expr: time() - trading_bot_last_job_run_timestamp > 7200
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Bot has not run a job in 2+ hours"
+          description: "Last job run was {{ $value | humanizeDuration }} ago."
+
+      # ── Claude Usage ─────────────────────────────────────────────────────
+      - alert: ClaudeHighErrorRate
+        expr: rate(claude_api_errors_total[15m]) / rate(claude_api_calls_total[15m]) > 0.10
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Claude API error rate > 10%"
+          description: "Claude error rate is {{ $value | humanizePercentage }}."
+
+      - alert: ClaudeBudgetNearExhausted
+        expr: claude_daily_token_usage / claude_daily_token_budget > 0.90
+        for: 0m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Claude daily budget 90% used"
+          description: "{{ $value | humanizePercentage }} of daily Claude token budget consumed."
+
+      # ── Database ─────────────────────────────────────────────────────────
+      - alert: PostgresDown
+        expr: up{job="postgres"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "PostgreSQL is down"
+
+      - alert: PostgresHighConnections
+        expr: pg_stat_activity_count > 80
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "PostgreSQL connection count > 80"
+
+      # ── Redis ────────────────────────────────────────────────────────────
+      - alert: RedisDown
+        expr: up{job="redis"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Redis is down"
+
+      # ── Disk ─────────────────────────────────────────────────────────────
+      - alert: DiskSpaceLow
+        expr: node_filesystem_avail_bytes{mountpoint="/"} / node_filesystem_size_bytes{mountpoint="/"} < 0.15
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Disk space below 15%"
+          description: "Available: {{ $value | humanizePercentage }}."
