@@ -9,7 +9,7 @@
 
 import { Router } from "express";
 import { z } from "zod";
-import { requireAuth } from "../middleware/auth.js";
+import { requireAuth, authorize } from "../middleware/auth.js";
 import pool from "../services/db.js";
 
 const router = Router();
@@ -67,7 +67,7 @@ router.post("/", async (req, res, next) => {
 });
 
 /** DELETE /api/v1/alerts/:id */
-router.delete("/:id", async (req, res, next) => {
+router.delete("/:id", authorize("admin", "trader"), async (req, res, next) => {
   try {
     const result = await pool.query(
       "DELETE FROM alerts WHERE id = $1::uuid RETURNING id",

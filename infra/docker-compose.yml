@@ -28,6 +28,22 @@ services:
       timeout: 5s
       retries: 5
 
+  rabbitmq:
+    image: rabbitmq:3.13-management
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: trader
+      RABBITMQ_DEFAULT_PASS: trader
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
   api:
     build:
       context: ../api
@@ -37,12 +53,15 @@ services:
     environment:
       DATABASE_URL: postgresql://trader:trader@postgres:5432/tradingbot
       REDIS_URL: redis://redis:6379
+      RABBITMQ_URL: amqp://trader:trader@rabbitmq:5672
       JWT_SECRET: ${JWT_SECRET:-dev-secret-change-in-prod}
       NODE_ENV: development
     depends_on:
       postgres:
         condition: service_healthy
       redis:
+        condition: service_healthy
+      rabbitmq:
         condition: service_healthy
     volumes:
       - ../api/src:/app/src   # hot-reload in dev
@@ -73,12 +92,22 @@ services:
       ALPACA_SECRET_KEY: ${ALPACA_SECRET_KEY}
       ALPACA_BASE_URL: ${ALPACA_BASE_URL:-https://paper-api.alpaca.markets}
       CLAUDE_DAILY_CALL_BUDGET: ${CLAUDE_DAILY_CALL_BUDGET:-0.25}
+      RABBITMQ_URL: amqp://trader:trader@rabbitmq:5672
+      SLACK_WEBHOOK_URL: ${SLACK_WEBHOOK_URL:-}
+      SENDGRID_API_KEY: ${SENDGRID_API_KEY:-}
+      SENDGRID_FROM_EMAIL: ${SENDGRID_FROM_EMAIL:-}
+      TWILIO_ACCOUNT_SID: ${TWILIO_ACCOUNT_SID:-}
+      TWILIO_AUTH_TOKEN: ${TWILIO_AUTH_TOKEN:-}
+      TWILIO_FROM_NUMBER: ${TWILIO_FROM_NUMBER:-}
       BOT_ENV: development
     depends_on:
       postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
 
 volumes:
   postgres_data:
+  rabbitmq_data:

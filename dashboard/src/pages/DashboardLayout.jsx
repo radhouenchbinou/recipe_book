@@ -1,20 +1,23 @@
 import React from "react";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth.js";
+import ToastContainer from "../components/ToastContainer.jsx";
 
 const NAV = [
   { to: "/portfolio",       label: "Portfolio" },
   { to: "/recommendations", label: "Recommendations" },
   { to: "/market",          label: "Market" },
   { to: "/alerts",          label: "Alerts" },
+  { to: "/analysis",        label: "Analysis" },
+  { to: "/settings",        label: "Settings" },
 ];
 
 export default function DashboardLayout() {
   const { logout } = useAuth();
   const navigate = useNavigate();
 
-  function handleLogout() {
-    logout();
+  async function handleLogout() {
+    await logout();
     navigate("/login");
   }
 
@@ -38,6 +41,7 @@ export default function DashboardLayout() {
       <main style={styles.main}>
         <Outlet />
       </main>
+      <ToastContainer />
     </div>
   );
 }

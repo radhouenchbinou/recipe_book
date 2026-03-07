@@ -1,8 +1,10 @@
 import { useState, useCallback } from "react";
-import { login as apiLogin } from "../services/api.js";
+import { useAuthStore } from "../stores/authStore.js";
+import { disconnectSocket } from "./useWebSocket.js";
+import api from "../services/api.js";
 
 export function useAuth() {
-  const [token, setToken] = useState(() => localStorage.getItem("token"));
+  const { token, user, setAuth, clearAuth } = useAuthStore();
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
 
@@ -10,9 +12,9 @@ export function useAuth() {
     setLoading(true);
     setError(null);
     try {
-      const t = await apiLogin(username, password);
-      localStorage.setItem("token", t);
-      setToken(t);
+      const res = await api.post("/auth/login", { username, password });
+      const { token: t, user: u } = res.data.data;
+      setAuth(t, u);
       return true;
     } catch (err) {
       setError(err.response?.data?.error ?? "Login failed");
@@ -20,12 +22,41 @@ export function useAuth() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [setAuth]);
 
-  const logout = useCallback(() => {
-    localStorage.removeItem("token");
-    setToken(null);
-  }, []);
+  const register = useCallback(async (username, email, password) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await api.post("/auth/register", { username, email, password });
+      const { token: t, user: u } = res.data.data;
+      setAuth(t, u);
+      return true;
+    } catch (err) {
+      setError(err.response?.data?.error ?? "Registration failed");
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  }, [setAuth]);
 
-  return { token, login, logout, error, loading, isAuthenticated: !!token };
+  const logout = useCallback(async () => {
+    try { await api.post("/auth/logout"); } catch { /* best-effort */ }
+    disconnectSocket();
+    clearAuth();
+  }, [clearAuth]);
+
+  const refreshToken = useCallback(async () => {
+    try {
+      const res = await api.post("/auth/refresh");
+      const { token: t } = res.data.data;
+      setAuth(t, user);
+      return t;
+    } catch {
+      clearAuth();
+      return null;
+    }
+  }, [user, setAuth, clearAuth]);
+
+  return { token, user, login, register, logout, refreshToken, error, loading, isAuthenticated: !!token };
 }

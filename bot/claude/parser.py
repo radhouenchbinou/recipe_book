@@ -121,6 +121,18 @@ def persist_recommendation(
             confidence=rec.confidence,
             id=rec_id,
         )
+        # Publish to RabbitMQ so API can push to Socket.io (non-fatal)
+        try:
+            from messaging.publisher import get_publisher
+            get_publisher().publish("rec.new", {
+                "symbol": ticker,
+                "action": rec.action,
+                "confidence": rec.confidence,
+                "id": rec_id,
+            })
+        except Exception as pub_exc:
+            log.warning("parser.publish_failed", ticker=ticker, error=str(pub_exc))
+
         return rec_id
     except Exception as exc:
         session.rollback()

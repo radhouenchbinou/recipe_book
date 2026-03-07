@@ -1,5 +1,5 @@
 /**
- * JWT authentication middleware.
+ * JWT authentication + RBAC middleware.
  * Attaches decoded payload to req.user on success.
  */
 
@@ -24,7 +24,20 @@ export function requireAuth(req, res, next) {
   }
 }
 
-/** Generate a signed token (used by /auth/login in dev/test). */
-export function signToken(payload, expiresIn = "8h") {
+/**
+ * Role-based access control.
+ * Usage: router.delete("/:id", requireAuth, authorize("admin", "trader"), handler)
+ */
+export function authorize(...roles) {
+  return (req, res, next) => {
+    if (!req.user || !roles.includes(req.user.role)) {
+      return res.status(403).json({ data: null, error: "Insufficient permissions", meta: {} });
+    }
+    next();
+  };
+}
+
+/** Generate a signed JWT. Default lifetime: 15 minutes. */
+export function signToken(payload, expiresIn = "15m") {
   return jwt.sign(payload, JWT_SECRET, { expiresIn });
 }

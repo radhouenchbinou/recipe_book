@@ -121,6 +121,77 @@ CREATE TABLE IF NOT EXISTS alerts (
 );
 
 -- ─────────────────────────────────────────
+-- 9. Users (multi-user auth)
+-- ─────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS users (
+    id            SERIAL PRIMARY KEY,
+    username      VARCHAR(64) NOT NULL UNIQUE,
+    email         VARCHAR(255) NOT NULL UNIQUE,
+    password_hash TEXT NOT NULL,
+    role          VARCHAR(16) NOT NULL DEFAULT 'viewer' CHECK (role IN ('admin', 'trader', 'viewer')),
+    created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- ─────────────────────────────────────────
+-- 10. Refresh tokens (one per active session)
+-- ─────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS refresh_tokens (
+    id          SERIAL PRIMARY KEY,
+    user_id     INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    token_hash  TEXT NOT NULL UNIQUE,   -- SHA-256 of the raw token
+    expires_at  TIMESTAMPTZ NOT NULL,
+    created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX idx_refresh_tokens_user ON refresh_tokens (user_id);
+
+-- ─────────────────────────────────────────
+-- 11. User settings (notification prefs)
+-- ─────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS user_settings (
+    user_id         INT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+    notify_slack    BOOLEAN NOT NULL DEFAULT FALSE,
+    notify_email    BOOLEAN NOT NULL DEFAULT FALSE,
+    notify_sms      BOOLEAN NOT NULL DEFAULT FALSE,
+    slack_webhook   TEXT,
+    email_addr      TEXT,
+    phone_number    TEXT,
+    risk_tolerance  VARCHAR(8) NOT NULL DEFAULT 'medium' CHECK (risk_tolerance IN ('low', 'medium', 'high')),
+    updated_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- ─────────────────────────────────────────
+-- 12. Bot runs (scheduler cycle audit log)
+-- ─────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS bot_runs (
+    id               SERIAL PRIMARY KEY,
+    run_at           TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    status           VARCHAR(16) NOT NULL CHECK (status IN ('ok', 'partial', 'error')),
+    symbols_scanned  INT NOT NULL DEFAULT 0,
+    recs_generated   INT NOT NULL DEFAULT 0,
+    claude_calls     INT NOT NULL DEFAULT 0,
+    duration_ms      INT,
+    error_msg        TEXT
+);
+
+CREATE INDEX idx_bot_runs_run_at ON bot_runs (run_at DESC);
+
+-- ─────────────────────────────────────────
+-- 13. Position history (daily P&L snapshots)
+-- ─────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS position_history (
+    id              SERIAL PRIMARY KEY,
+    symbol_id       UUID NOT NULL REFERENCES symbols(id),
+    recorded_at     TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    qty             NUMERIC(15, 6) NOT NULL,
+    avg_entry       NUMERIC(12, 4) NOT NULL,
+    market_val      NUMERIC(15, 4) NOT NULL,
+    unrealised_pnl  NUMERIC(15, 4) NOT NULL
+);
+
+CREATE INDEX idx_position_history_symbol ON position_history (symbol_id, recorded_at DESC);
+
+-- ─────────────────────────────────────────
 -- Seed: default tracked symbols
 -- ─────────────────────────────────────────
 INSERT INTO symbols (ticker, name, asset_type) VALUES

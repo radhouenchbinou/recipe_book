@@ -104,6 +104,7 @@ def recommend_for_ticker(ticker: str, force_claude: bool = False) -> Optional[Re
             sentiment_score=scores["sentiment"],
             geo_risk_score=scores["geo_risk"],
             composite_score=scores["composite"],
+            fundamental_score=None,  # not loaded from DB (computed in pipeline)
             rsi=_extract_indicator(snapshot, "rsi_14"),
             macd=_extract_indicator(snapshot, "macd"),
             macd_hist=_extract_indicator(snapshot, "macd_hist"),
