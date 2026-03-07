@@ -8,7 +8,7 @@ Every session **must** follow these rules without exception.
 ## Project Identity
 
 **Name:** AI-Powered Trading Bot
-**Phase:** 2 of 3 — **Sprint 3 COMPLETE ✅ — Portfolio Optimizer · Drift Detection · VaR/CVaR/Beta · Risk Dashboard**
+**Phase:** 3 of 3 — **Sprint 1 IN PROGRESS 🔄 — Alembic · Alert Engine · Portfolio Prompts · SSE Streaming · CI Gate**
 **Goal:** Automated stock/ETF/gold trading with Claude API recommendations, sentiment analysis, and geopolitical risk scoring.
 
 ### Active Branch Convention
@@ -23,7 +23,8 @@ All development branches follow: `claude/<description>-HUmPC`
 | P1-S5 | `claude/trading-bot-sprint5-production-HUmPC` | ✅ Merged to main |
 | P2-S1 | `claude/trading-bot-phase2-sprint1-HUmPC` | ✅ Merged to main |
 | P2-S2 | `claude/trading-bot-phase2-sprint2-HUmPC` | ✅ Merged to main |
-| P2-S3 | `claude/trading-bot-phase2-sprint3-HUmPC` | ✅ Complete — pending merge |
+| P2-S3 | `claude/trading-bot-phase2-sprint3-HUmPC` | ✅ Merged to main |
+| P3-S1 | `claude/trading-bot-phase3-sprint1-HUmPC` | 🔄 Active |
 
 ---
 
@@ -57,7 +58,8 @@ All development branches follow: `claude/<description>-HUmPC`
 │   │   │       ├── rebalance.js ← GET /api/v2/rebalance · POST /api/v2/rebalance/execute
 │   │   │       ├── equity.js    ← GET /api/v2/equity[/:symbol]?days=N (equity time-series)
 │   │   │       ├── optimize.js  ← GET /api/v2/optimize[/drift] (vol-dampened weights)
-│   │   │       └── risk.js      ← GET /api/v2/risk[/:symbol] (VaR, CVaR, beta, corr)
+│   │   │       ├── risk.js      ← GET /api/v2/risk[/:symbol] (VaR, CVaR, beta, corr)
+│   │   │       └── stream.js    ← GET /api/v2/stream/prices (SSE real-time prices)
 │   │   └── services/
 │   │       ├── db.js            ← pg connection pool
 │   │       └── redis.js         ← ioredis + cached() helper
@@ -79,9 +81,12 @@ All development branches follow: `claude/<description>-HUmPC`
 │   │   ├── sentiment.py         ← FinBERT + lexicon fallback (S2-T2-001)
 │   │   ├── geo_risk.py          ← geo event detection, 0-100 score (S2-T3-001)
 │   │   └── pipeline.py          ← orchestrator → composite score → DB
+│   ├── alerts/                  ← Phase 3: alert engine
+│   │   └── engine.py            ← AlertEngine (price/score triggers, webhook, cooldown)
 │   ├── claude/
 │   │   ├── usage_tracker.py     ← daily token budget enforcement
 │   │   ├── prompt_builder.py    ← structured <2000-token prompts
+│   │   ├── portfolio_prompt.py  ← advanced prompt w/ portfolio context + peer rank (P3)
 │   │   ├── client.py            ← Anthropic SDK + retry
 │   │   ├── trigger.py           ← smart trigger (delta/neutral/budget)
 │   │   ├── parser.py            ← JSON response parser + DB persist
@@ -102,6 +107,14 @@ All development branches follow: `claude/<description>-HUmPC`
 │   │   └── metrics.py           ← RiskMetrics (VaR, CVaR, beta, correlation matrix)
 │   ├── trading/                 ← Phase 2: live order execution
 │   │   └── executor.py          ← LiveTradeExecutor (risk-checked paper orders, stop-loss scan)
+│   ├── alembic/                 ← Phase 3: DB migration system
+│   │   ├── env.py               ← Alembic env (DATABASE_URL from env)
+│   │   ├── script.py.mako       ← revision template
+│   │   └── versions/
+│   │       ├── 0001_initial_schema.py         ← baseline schema
+│   │       ├── 0002_add_alert_triggered_at.py ← alert engine columns
+│   │       └── 0003_add_recommendation_tags.py ← tags + portfolio_context
+│   ├── alembic.ini              ← Alembic configuration
 │   ├── tests/                   ← pytest unit tests (all modules)
 │   ├── requirements.txt
 │   ├── pytest.ini
@@ -165,13 +178,23 @@ All development branches follow: `claude/<description>-HUmPC`
 | 4 | Week 4 | REST API endpoints · React dashboard | ✅ Done |
 | 5 | Week 5 | CI/CD · Load testing · Security · Monitoring · E2E tests | ✅ Done |
 
-### Phase 2 (In Progress 🔄)
+### Phase 2 (Complete ✅)
+
+### Phase 3 (In Progress 🔄)
 
 | Sprint | Focus | Status |
 |--------|-------|--------|
 | P2-S1 | Backtesting engine · Portfolio rebalancer · Performance analytics · Risk guard · API v2 | ✅ Done |
 | P2-S2 | Live trade executor · Equity chart API · Performance + Backtest dashboard pages | ✅ Done |
 | P2-S3 | Portfolio optimizer · Drift detection · VaR/CVaR/Beta · Risk dashboard | ✅ Done |
+
+### Phase 3 (In Progress 🔄)
+
+| Sprint | Focus | Status |
+|--------|-------|--------|
+| P3-S1 | Alembic migrations · Alert engine · Portfolio prompts · SSE streaming · CI hardening | 🔄 Active |
+| P3-S2 | Multi-broker abstraction · Paper → live order routing · Production hardening | ⏳ Upcoming |
+| P3-S3 | Advanced analytics · Reporting · Final production sign-off | ⏳ Upcoming |
 
 ---
 
@@ -220,6 +243,7 @@ All development branches follow: `claude/<description>-HUmPC`
 | GET | `/api/v2/optimize/drift` | ✅ | Detect allocation drift vs target weights |
 | GET | `/api/v2/risk` | ✅ | Portfolio VaR, CVaR, beta, correlation matrix |
 | GET | `/api/v2/risk/:symbol` | ✅ | Per-symbol VaR, CVaR, annualised vol, beta |
+| GET | `/api/v2/stream/prices` | ✅ | SSE real-time price stream (symbols param, token auth) |
 
 All responses: `{ data, error, meta }` envelope.
 
@@ -369,7 +393,8 @@ python agent.py --action identify_risks
 | G5 | S5 → Prod | CI green, load test passed, security audit clean, E2E passing | ✅ Passed |
 | G6 | P2-S1 → P2-S2 | Backtest engine, rebalancer, risk guard, API v2 tests green | ✅ Passed |
 | G7 | P2-S2 → P2-S3 | Executor paper trades work, equity chart renders, dashboard tests green | ✅ Passed |
-| G8 | P2-S3 → P3 | Optimizer weights valid, VaR/beta computable, risk page renders | ✅ Ready for review |
+| G8 | P2-S3 → P3 | Optimizer weights valid, VaR/beta computable, risk page renders | ✅ Passed |
+| G9 | P3-S1 → P3-S2 | Migrations run clean, alerts fire correctly, CI gate green | 🔄 In progress |
 
 ---
 

@@ -36,7 +36,7 @@ jobs:
       - name: Install dependencies
         run: pip install -r bot/requirements.txt
 
-      - name: Run pytest with coverage
+      - name: Run pytest with coverage (80% gate)
         working-directory: bot
         env:
           DATABASE_URL: postgresql://trader:trader@localhost:5432/tradingbot_test
@@ -44,18 +44,90 @@ jobs:
           ANTHROPIC_API_KEY: dummy
           ALPACA_API_KEY: dummy
           ALPACA_SECRET_KEY: dummy
-        run: pytest --cov=. --cov-report=xml --cov-fail-under=75
+        run: pytest --cov=. --cov-report=xml --cov-report=term-missing --cov-fail-under=80
 
-      - name: Upload coverage
+      - name: Upload bot coverage
         uses: codecov/codecov-action@v4
         with:
           files: bot/coverage.xml
           flags: bot
 
+      - name: Lint with flake8
+        working-directory: bot
+        run: |
+          pip install flake8
+          flake8 . --count --max-line-length=100 --extend-ignore=E203,W503 \
+            --exclude=alembic/,__pycache__,.pytest_cache
+
+  # ── Alembic Migration Check ────────────────────────────────────────────────
+  migration-check:
+    name: Bot — Alembic migrations
+    runs-on: ubuntu-latest
+    needs: bot-tests
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_USER: trader
+          POSTGRES_PASSWORD: trader
+          POSTGRES_DB: tradingbot_test
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd="pg_isready -U trader"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: bot/requirements.txt
+
+      - name: Install dependencies
+        run: pip install -r bot/requirements.txt
+
+      - name: Run migrations head
+        working-directory: bot
+        env:
+          DATABASE_URL: postgresql://trader:trader@localhost:5432/tradingbot_test
+        run: alembic upgrade head
+
+      - name: Verify downgrade works
+        working-directory: bot
+        env:
+          DATABASE_URL: postgresql://trader:trader@localhost:5432/tradingbot_test
+        run: alembic downgrade base
+
+      - name: Re-apply to confirm idempotency
+        working-directory: bot
+        env:
+          DATABASE_URL: postgresql://trader:trader@localhost:5432/tradingbot_test
+        run: alembic upgrade head
+
   # ── Node.js API Tests ──────────────────────────────────────────────────────
   api-tests:
     name: API — Jest
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_USER: trader
+          POSTGRES_PASSWORD: trader
+          POSTGRES_DB: tradingbot_test
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd="pg_isready -U trader"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+      redis:
+        image: redis:7-alpine
+        ports: ["6379:6379"]
+        options: --health-cmd="redis-cli ping" --health-interval=5s --health-retries=5
     steps:
       - uses: actions/checkout@v4
 
@@ -69,7 +141,7 @@ jobs:
         working-directory: api
         run: npm ci
 
-      - name: Run tests
+      - name: Run tests with coverage
         working-directory: api
         env:
           NODE_ENV: test
@@ -77,7 +149,14 @@ jobs:
           DEV_USERNAME: admin
           DEV_PASSWORD: changeme
           DATABASE_URL: postgresql://trader:trader@localhost:5432/tradingbot_test
-        run: npm test -- --forceExit
+          REDIS_URL: redis://localhost:6379
+        run: npm test -- --forceExit --coverage
+
+      - name: Upload API coverage
+        uses: codecov/codecov-action@v4
+        with:
+          files: api/coverage/lcov.info
+          flags: api
 
   # ── React Dashboard Tests ──────────────────────────────────────────────────
   dashboard-tests:
@@ -96,13 +175,19 @@ jobs:
         working-directory: dashboard
         run: npm ci
 
-      - name: Run tests
+      - name: Run tests with coverage
         working-directory: dashboard
-        run: npm test
+        run: npm test -- --coverage
+
+      - name: Upload dashboard coverage
+        uses: codecov/codecov-action@v4
+        with:
+          files: dashboard/coverage/lcov.info
+          flags: dashboard
 
   # ── Security Scan ──────────────────────────────────────────────────────────
   security:
-    name: Security — audit
+    name: Security — audit + SAST
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -111,13 +196,38 @@ jobs:
         with:
           node-version: "20"
 
-      - name: Audit API dependencies
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Audit API dependencies (high severity)
         working-directory: api
         run: npm audit --audit-level=high || true
 
-      - name: Audit Dashboard dependencies
+      - name: Audit Dashboard dependencies (high severity)
         working-directory: dashboard
         run: npm audit --audit-level=high || true
+
+      - name: Python safety check
+        run: |
+          pip install safety
+          safety check -r bot/requirements.txt --ignore 70612 || true
+
+      - name: Bandit SAST (Python)
+        run: |
+          pip install bandit
+          bandit -r bot/ -ll -x bot/tests,bot/alembic \
+            --format json -o bandit-report.json || true
+          cat bandit-report.json | python3 -c "
+          import json, sys
+          r = json.load(sys.stdin)
+          hi = [i for i in r.get('results',[]) if i['issue_severity']=='HIGH']
+          if hi:
+            print(f'HIGH severity issues found: {len(hi)}')
+            for i in hi: print(f'  {i[\"filename\"]}:{i[\"line_number\"]} — {i[\"issue_text\"]}')
+            sys.exit(1)
+          print('No HIGH severity SAST issues.')
+          "
 
       - name: Check for secrets in code
         uses: trufflesecurity/trufflehog@main
@@ -127,3 +237,25 @@ jobs:
           head: HEAD
           extra_args: --only-verified
         continue-on-error: true
+
+  # ── All-pass gate ──────────────────────────────────────────────────────────
+  ci-gate:
+    name: CI Gate
+    runs-on: ubuntu-latest
+    needs: [bot-tests, migration-check, api-tests, dashboard-tests, security]
+    if: always()
+    steps:
+      - name: Check all jobs passed
+        run: |
+          results='${{ toJSON(needs) }}'
+          failed=$(echo "$results" | python3 -c "
+          import json, sys
+          d = json.load(sys.stdin)
+          fails = [k for k, v in d.items() if v['result'] not in ('success','skipped')]
+          print(' '.join(fails))
+          ")
+          if [ -n "$failed" ]; then
+            echo "Failed jobs: $failed"
+            exit 1
+          fi
+          echo "All CI jobs passed."
