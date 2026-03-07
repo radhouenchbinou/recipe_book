@@ -56,4 +56,14 @@ export const getEquity         = (days = 90)     =>
 export const getSymbolEquity   = (symbol, days = 90) =>
   api.get(`/api/v2/equity/${symbol}`, { params: { days } }).then((r) => r.data.data);
 
+// ── Phase 2 Sprint 3 — Optimizer + Risk ───────────────────────────────────
+export const getOptimizedWeights = ()              =>
+  api.get("/api/v2/optimize").then((r) => r.data.data);
+export const getDrift            = (threshold)     =>
+  api.get("/api/v2/optimize/drift", { params: { threshold } }).then((r) => r.data.data);
+export const getPortfolioRisk    = (params)        =>
+  api.get("/api/v2/risk", { params }).then((r) => r.data.data);
+export const getSymbolRisk       = (symbol, params) =>
+  api.get(`/api/v2/risk/${symbol}`, { params }).then((r) => r.data.data);
+
 export default api;
