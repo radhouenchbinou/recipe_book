@@ -8,7 +8,7 @@ Every session **must** follow these rules without exception.
 ## Project Identity
 
 **Name:** AI-Powered Trading Bot
-**Phase:** 3 of 3 — **Sprint 2 COMPLETE ✅ — Multi-Broker Abstraction · Order Router · Order Ledger · Reporting**
+**Phase:** 3 of 3 — **COMPLETE ✅ — Dashboard Reporting Page · API Report Tests · Infra Schema · Final Sign-off**
 **Goal:** Automated stock/ETF/gold trading with Claude API recommendations, sentiment analysis, and geopolitical risk scoring.
 
 ### Active Branch Convention
@@ -26,6 +26,7 @@ All development branches follow: `claude/<description>-HUmPC`
 | P2-S3 | `claude/trading-bot-phase2-sprint3-HUmPC` | ✅ Merged to main |
 | P3-S1 | `claude/trading-bot-phase3-sprint1-HUmPC` | ✅ Merged to main |
 | P3-S2 | `claude/trading-bot-phase3-sprint2-HUmPC` | ✅ Complete — pending merge |
+| P3-S3 | `claude/trading-bot-phase3-sprint3-HUmPC` | ✅ Complete — pending merge |
 
 ---
 
@@ -139,14 +140,15 @@ All development branches follow: `claude/<description>-HUmPC`
 │   │   │   └── api.js           ← axios client + auth interceptor
 │   │   ├── pages/
 │   │   │   ├── LoginPage.jsx
-│   │   │   ├── DashboardLayout.jsx  ← sidebar nav (6 links incl. Performance + Backtest)
+│   │   │   ├── DashboardLayout.jsx  ← sidebar nav (8 links incl. Performance, Backtest, Risk, Reports)
 │   │   │   ├── PortfolioPage.jsx    ← account stats + positions table
 │   │   │   ├── RecommendationsPage.jsx ← cards + filters
 │   │   │   ├── MarketPage.jsx       ← heatmap tiles + price chart
 │   │   │   ├── AlertsPage.jsx       ← CRUD alert management
 │   │   │   ├── PerformancePage.jsx  ← equity chart · rec stats · rebalance panel (Phase 2)
 │   │   │   ├── BacktestPage.jsx     ← signal history by symbol (Phase 2)
-│   │   │   └── RiskPage.jsx         ← optimizer weights · drift · VaR/beta · corr heatmap (P2-S3)
+│   │   │   ├── RiskPage.jsx         ← optimizer weights · drift · VaR/beta · corr heatmap (P2-S3)
+│   │   │   └── ReportingPage.jsx    ← trade log · P&L · rec accuracy tabs + CSV download (P3-S3)
 │   │   └── __tests__/           ← Vitest + Testing Library
 │   ├── package.json
 │   ├── vite.config.js
@@ -157,7 +159,7 @@ All development branches follow: `claude/<description>-HUmPC`
     ├── docker-compose.yml       ← all 5 services (postgres, redis, api, bot, dashboard)
     ├── docker-compose.prod.yml  ← production compose (GHCR images, secrets via env)
     ├── postgres/
-    │   └── schema.sql           ← 8 tables + indexes + seed symbols
+    │   └── schema.sql           ← 9 tables + indexes + seed symbols (order_ledger added P3-S3)
     ├── k6/
     │   ├── smoke-test.js        ← 1 VU, 30s — sanity check
     │   └── load-test.js         ← 100 VU ramp, p99 < 500ms thresholds
@@ -202,7 +204,7 @@ All development branches follow: `claude/<description>-HUmPC`
 |--------|-------|--------|
 | P3-S1 | Alembic migrations · Alert engine · Portfolio prompts · SSE streaming · CI hardening | ✅ Done |
 | P3-S2 | Multi-broker abstraction · Order router · Order ledger · Reporting module | ✅ Done |
-| P3-S3 | Advanced analytics · Dashboard reporting page · Final production sign-off | ⏳ Upcoming |
+| P3-S3 | Dashboard reporting page · API report tests · Infra schema sign-off | ✅ Done |
 
 ---
 
@@ -409,7 +411,8 @@ python agent.py --action identify_risks
 | G7 | P2-S2 → P2-S3 | Executor paper trades work, equity chart renders, dashboard tests green | ✅ Passed |
 | G8 | P2-S3 → P3 | Optimizer weights valid, VaR/beta computable, risk page renders | ✅ Passed |
 | G9 | P3-S1 → P3-S2 | Migrations run clean, alerts fire correctly, CI gate green | ✅ Passed |
-| G10 | P3-S2 → P3-S3 | Broker abstraction tests green, order ledger migration applied, reporting exports valid | ✅ Ready for review |
+| G10 | P3-S2 → P3-S3 | Broker abstraction tests green, order ledger migration applied, reporting exports valid | ✅ Passed |
+| G11 | P3-S3 → Done | ReportingPage renders, API report tests pass, schema updated, CI green | ✅ Passed |
 
 ---
 

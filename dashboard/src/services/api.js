@@ -66,4 +66,18 @@ export const getPortfolioRisk    = (params)        =>
 export const getSymbolRisk       = (symbol, params) =>
   api.get(`/api/v2/risk/${symbol}`, { params }).then((r) => r.data.data);
 
+// ── Phase 3 Sprint 3 — Reporting endpoints ────────────────────────────────
+export const getReportTrades   = (params) =>
+  api.get("/api/v2/report/trades",   { params }).then((r) => r.data.data);
+export const getReportPnl      = (params) =>
+  api.get("/api/v2/report/pnl",      { params }).then((r) => r.data.data);
+export const getReportAccuracy = (params) =>
+  api.get("/api/v2/report/accuracy", { params }).then((r) => r.data.data);
+
+/** Open the CSV download URL in a new tab (no axios — browser handles download). */
+export function downloadReportCsv(type, params = {}) {
+  const qs = new URLSearchParams({ ...params, format: "csv" }).toString();
+  window.open(`/api/v2/report/${type}?${qs}`, "_blank");
+}
+
 export default api;
