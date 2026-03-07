@@ -8,7 +8,7 @@ Every session **must** follow these rules without exception.
 ## Project Identity
 
 **Name:** AI-Powered Trading Bot
-**Phase:** 3 of 3 — **Sprint 1 IN PROGRESS 🔄 — Alembic · Alert Engine · Portfolio Prompts · SSE Streaming · CI Gate**
+**Phase:** 3 of 3 — **Sprint 2 COMPLETE ✅ — Multi-Broker Abstraction · Order Router · Order Ledger · Reporting**
 **Goal:** Automated stock/ETF/gold trading with Claude API recommendations, sentiment analysis, and geopolitical risk scoring.
 
 ### Active Branch Convention
@@ -24,7 +24,8 @@ All development branches follow: `claude/<description>-HUmPC`
 | P2-S1 | `claude/trading-bot-phase2-sprint1-HUmPC` | ✅ Merged to main |
 | P2-S2 | `claude/trading-bot-phase2-sprint2-HUmPC` | ✅ Merged to main |
 | P2-S3 | `claude/trading-bot-phase2-sprint3-HUmPC` | ✅ Merged to main |
-| P3-S1 | `claude/trading-bot-phase3-sprint1-HUmPC` | 🔄 Active |
+| P3-S1 | `claude/trading-bot-phase3-sprint1-HUmPC` | ✅ Merged to main |
+| P3-S2 | `claude/trading-bot-phase3-sprint2-HUmPC` | ✅ Complete — pending merge |
 
 ---
 
@@ -59,7 +60,8 @@ All development branches follow: `claude/<description>-HUmPC`
 │   │   │       ├── equity.js    ← GET /api/v2/equity[/:symbol]?days=N (equity time-series)
 │   │   │       ├── optimize.js  ← GET /api/v2/optimize[/drift] (vol-dampened weights)
 │   │   │       ├── risk.js      ← GET /api/v2/risk[/:symbol] (VaR, CVaR, beta, corr)
-│   │   │       └── stream.js    ← GET /api/v2/stream/prices (SSE real-time prices)
+│   │   │       ├── stream.js    ← GET /api/v2/stream/prices (SSE real-time prices)
+│   │   │       └── report.js   ← GET /api/v2/report/trades|pnl|accuracy (CSV/JSON export)
 │   │   └── services/
 │   │       ├── db.js            ← pg connection pool
 │   │       └── redis.js         ← ioredis + cached() helper
@@ -74,8 +76,11 @@ All development branches follow: `claude/<description>-HUmPC`
 │   ├── collectors/
 │   │   ├── market_data.py       ← Yahoo Finance OHLCV (S1-T2-001)
 │   │   └── news_fetcher.py      ← RSS news + symbol tagging (S1-T2-002)
-│   ├── broker/
-│   │   └── connector.py         ← Alpaca paper trading (S1-T3-001)
+│   ├── broker/                  ← Phase 3: multi-broker abstraction
+│   │   ├── connector.py         ← Alpaca paper trading (S1-T3-001, legacy)
+│   │   ├── base.py              ← BaseBroker ABC + OrderResult dataclass
+│   │   ├── alpaca.py            ← AlpacaBroker (wraps connector, implements BaseBroker)
+│   │   └── router.py            ← get_broker() factory · SimBroker (in-memory)
 │   ├── analysis/
 │   │   ├── indicators.py        ← RSI, MACD, Bollinger, SMA/EMA (S2-T1-001)
 │   │   ├── sentiment.py         ← FinBERT + lexicon fallback (S2-T2-001)
@@ -107,13 +112,16 @@ All development branches follow: `claude/<description>-HUmPC`
 │   │   └── metrics.py           ← RiskMetrics (VaR, CVaR, beta, correlation matrix)
 │   ├── trading/                 ← Phase 2: live order execution
 │   │   └── executor.py          ← LiveTradeExecutor (risk-checked paper orders, stop-loss scan)
+│   ├── reporting/               ← Phase 3: trade & performance reporting
+│   │   └── reporter.py          ← Reporter (trade_log, pnl_summary, recommendation_accuracy; CSV/JSON)
 │   ├── alembic/                 ← Phase 3: DB migration system
 │   │   ├── env.py               ← Alembic env (DATABASE_URL from env)
 │   │   ├── script.py.mako       ← revision template
 │   │   └── versions/
 │   │       ├── 0001_initial_schema.py         ← baseline schema
 │   │       ├── 0002_add_alert_triggered_at.py ← alert engine columns
-│   │       └── 0003_add_recommendation_tags.py ← tags + portfolio_context
+│   │       ├── 0003_add_recommendation_tags.py ← tags + portfolio_context
+│   │       └── 0004_add_order_ledger.py        ← order audit table
 │   ├── alembic.ini              ← Alembic configuration
 │   ├── tests/                   ← pytest unit tests (all modules)
 │   ├── requirements.txt
@@ -192,9 +200,9 @@ All development branches follow: `claude/<description>-HUmPC`
 
 | Sprint | Focus | Status |
 |--------|-------|--------|
-| P3-S1 | Alembic migrations · Alert engine · Portfolio prompts · SSE streaming · CI hardening | 🔄 Active |
-| P3-S2 | Multi-broker abstraction · Paper → live order routing · Production hardening | ⏳ Upcoming |
-| P3-S3 | Advanced analytics · Reporting · Final production sign-off | ⏳ Upcoming |
+| P3-S1 | Alembic migrations · Alert engine · Portfolio prompts · SSE streaming · CI hardening | ✅ Done |
+| P3-S2 | Multi-broker abstraction · Order router · Order ledger · Reporting module | ✅ Done |
+| P3-S3 | Advanced analytics · Dashboard reporting page · Final production sign-off | ⏳ Upcoming |
 
 ---
 
@@ -244,6 +252,9 @@ All development branches follow: `claude/<description>-HUmPC`
 | GET | `/api/v2/risk` | ✅ | Portfolio VaR, CVaR, beta, correlation matrix |
 | GET | `/api/v2/risk/:symbol` | ✅ | Per-symbol VaR, CVaR, annualised vol, beta |
 | GET | `/api/v2/stream/prices` | ✅ | SSE real-time price stream (symbols param, token auth) |
+| GET | `/api/v2/report/trades` | ✅ | Order ledger export (filter: symbol/broker/status/days, CSV or JSON) |
+| GET | `/api/v2/report/pnl` | ✅ | Realised P&L by symbol (CSV or JSON) |
+| GET | `/api/v2/report/accuracy` | ✅ | Recommendation follow-through stats (CSV or JSON) |
 
 All responses: `{ data, error, meta }` envelope.
 
@@ -277,6 +288,9 @@ API_PORT=3000
 # Dashboard (dev)
 DEV_USERNAME=admin
 DEV_PASSWORD=changeme
+
+# Broker mode (paper | live | sim)
+BROKER_MODE=paper
 
 # Bot scheduler (optional overrides)
 MARKET_DATA_CRON="0 18 * * 1-5"
@@ -394,7 +408,8 @@ python agent.py --action identify_risks
 | G6 | P2-S1 → P2-S2 | Backtest engine, rebalancer, risk guard, API v2 tests green | ✅ Passed |
 | G7 | P2-S2 → P2-S3 | Executor paper trades work, equity chart renders, dashboard tests green | ✅ Passed |
 | G8 | P2-S3 → P3 | Optimizer weights valid, VaR/beta computable, risk page renders | ✅ Passed |
-| G9 | P3-S1 → P3-S2 | Migrations run clean, alerts fire correctly, CI gate green | 🔄 In progress |
+| G9 | P3-S1 → P3-S2 | Migrations run clean, alerts fire correctly, CI gate green | ✅ Passed |
+| G10 | P3-S2 → P3-S3 | Broker abstraction tests green, order ledger migration applied, reporting exports valid | ✅ Ready for review |
 
 ---
 

@@ -24,6 +24,7 @@ import equityRouter          from "./routes/v2/equity.js";
 import optimizeRouter        from "./routes/v2/optimize.js";
 import riskRouter            from "./routes/v2/risk.js";
 import streamRouter          from "./routes/v2/stream.js";
+import reportRouter          from "./routes/v2/report.js";
 
 const app = express();
 const PORT = process.env.API_PORT ?? 3000;
@@ -53,6 +54,7 @@ app.use("/api/v2/equity",            equityRouter);
 app.use("/api/v2/optimize",          optimizeRouter);
 app.use("/api/v2/risk",              riskRouter);
 app.use("/api/v2/stream",           streamRouter);
+app.use("/api/v2/report",          reportRouter);
 
 // ── 404 ────────────────────────────────────────────────────────────────────
 app.use((_req, res) => {
