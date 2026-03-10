@@ -1,0 +1,104 @@
+{
+  "title": "Trading Bot — Overview",
+  "uid": "trading-bot-overview",
+  "version": 1,
+  "schemaVersion": 38,
+  "refresh": "30s",
+  "tags": ["trading-bot", "production"],
+  "panels": [
+    {
+      "id": 1,
+      "title": "API Request Rate",
+      "type": "timeseries",
+      "gridPos": { "x": 0, "y": 0, "w": 8, "h": 8 },
+      "targets": [{
+        "expr": "rate(http_requests_total{job=\"api\"}[5m])",
+        "legendFormat": "{{method}} {{route}}"
+      }]
+    },
+    {
+      "id": 2,
+      "title": "API p99 Latency (ms)",
+      "type": "timeseries",
+      "gridPos": { "x": 8, "y": 0, "w": 8, "h": 8 },
+      "targets": [{
+        "expr": "histogram_quantile(0.99, rate(http_request_duration_seconds_bucket{job=\"api\"}[5m])) * 1000",
+        "legendFormat": "p99"
+      }, {
+        "expr": "histogram_quantile(0.95, rate(http_request_duration_seconds_bucket{job=\"api\"}[5m])) * 1000",
+        "legendFormat": "p95"
+      }]
+    },
+    {
+      "id": 3,
+      "title": "API Error Rate %",
+      "type": "stat",
+      "gridPos": { "x": 16, "y": 0, "w": 8, "h": 8 },
+      "targets": [{
+        "expr": "100 * rate(http_requests_total{job=\"api\",status=~\"5..\"}[5m]) / rate(http_requests_total{job=\"api\"}[5m])",
+        "legendFormat": "Error %"
+      }]
+    },
+    {
+      "id": 4,
+      "title": "Claude API Calls Today",
+      "type": "stat",
+      "gridPos": { "x": 0, "y": 8, "w": 6, "h": 6 },
+      "targets": [{
+        "expr": "claude_api_calls_total",
+        "legendFormat": "Calls"
+      }]
+    },
+    {
+      "id": 5,
+      "title": "Claude Budget Used %",
+      "type": "gauge",
+      "gridPos": { "x": 6, "y": 8, "w": 6, "h": 6 },
+      "options": { "minValue": 0, "maxValue": 100 },
+      "targets": [{
+        "expr": "100 * claude_daily_token_usage / claude_daily_token_budget",
+        "legendFormat": "Budget Used"
+      }]
+    },
+    {
+      "id": 6,
+      "title": "Recommendations per Hour",
+      "type": "timeseries",
+      "gridPos": { "x": 12, "y": 8, "w": 12, "h": 6 },
+      "targets": [{
+        "expr": "rate(trading_bot_recommendations_total[1h])",
+        "legendFormat": "{{action}} ({{source}})"
+      }]
+    },
+    {
+      "id": 7,
+      "title": "Bot Last Job Run",
+      "type": "stat",
+      "gridPos": { "x": 0, "y": 14, "w": 8, "h": 6 },
+      "targets": [{
+        "expr": "time() - trading_bot_last_job_run_timestamp",
+        "legendFormat": "Seconds since last run"
+      }]
+    },
+    {
+      "id": 8,
+      "title": "PostgreSQL Active Connections",
+      "type": "timeseries",
+      "gridPos": { "x": 8, "y": 14, "w": 8, "h": 6 },
+      "targets": [{
+        "expr": "pg_stat_activity_count",
+        "legendFormat": "Connections"
+      }]
+    },
+    {
+      "id": 9,
+      "title": "Redis Memory Used",
+      "type": "timeseries",
+      "gridPos": { "x": 16, "y": 14, "w": 8, "h": 6 },
+      "targets": [{
+        "expr": "redis_memory_used_bytes",
+        "legendFormat": "Memory"
+      }]
+    }
+  ]
+}

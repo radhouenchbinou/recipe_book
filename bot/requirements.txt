@@ -1,0 +1,37 @@
+# Core
+anthropic==0.40.0
+alpaca-trade-api==3.3.0
+psycopg2-binary==2.9.9
+redis==5.0.1
+sqlalchemy==2.0.25
+alembic==1.13.1
+
+# Scheduling
+APScheduler==3.10.4
+
+# Data & Analysis
+pandas==2.1.4
+numpy==1.26.3
+yfinance==0.2.36
+ta==0.11.0              # technical-analysis (pure Python, no TA-Lib dep)
+feedparser==6.0.11      # RSS news
+
+# Sentiment
+transformers==4.37.2
+torch==2.1.2            # CPU-only; override in GPU env
+sentencepiece==0.1.99
+
+# Messaging (RabbitMQ)
+pika==1.3.2
+
+# Utils
+python-dotenv==1.0.0
+structlog==24.1.0
+httpx==0.26.0
+tenacity==8.2.3         # retry decorator
+
+# Testing
+pytest==7.4.4
+pytest-cov==4.1.0
+pytest-asyncio==0.23.3
+respx==0.20.2           # mock httpx
